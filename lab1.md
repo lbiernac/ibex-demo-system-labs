@@ -9,111 +9,205 @@ Welcome to the first lab on using the [Ibex demo system](https://github.com/lowR
 - Read from the UART.
 - Interact with the Ibex using GDB.
 
-## Getting started
-To start please decompress the zip file on the USB or clone the repository using the following terminal commands:
+
+
+## Getting started with the Ibex SoC Demo System
+From the Ubuntu-20.04 terminal (either standalone or in VS Code), clone ibex-demo-system repository using the following terminal commands:
 ```bash
 git clone https://github.com/lowRISC/ibex-demo-system
 cd ibex-demo-system
 ```
 
-Now, let us set up our container. First install docker (or you can use pacman if you are already familiar with it.
-On the USB go to the "Docker Installers" directory and follow the instructions based on your operating system.
-
-### Windows
-Check that you have virtualization enabled in task manager under performance and CPU. If not, you need to enable virtualization in your BIOS settings.
-Make sure "Windows Subsystem for Linux" and "Virtual Machine Platform" are enabled in "Turn Windows features on or off"
-Double click wsl_update_x86.msi and install.
-Open powershell and run: wsl --set-default-version 2
-Double click "Docker Desktop Installer Windows.exe"
-When prompted select WSL 2.
-If your admin account is different to your user account, you must add the user to the docker-users group. Run Computer Management as an administrator and navigate to Local Users and Groups > Groups > docker-users. Right-click to add the user to the group. Log out and log back in for the changes to take effect.
-
-### Mac
-Double click DockerMacIntel.dmg or DockerMackArm.dmg depending on your CPU and drag the Docker icon to the Applications folder.
-Double click Docker.app in the Applications folder.
-Accept the terms.
-
-### Ubuntu
-Make sure you have gnome-terminal installed
+This tutorial was pulled from commit `c25aeeb` and done on Windows 11. You can pull a specific commit from GitHub using the additional terminal command: 
 ```bash
-sudo apt-get install ./docker-desktop-4.16.0-ubuntu-amd64.deb
-systemctl --user enable docker-desktop
+git checkout c25aeeba59a695ee7846c8c39a2ddc11230c2656
 ```
 
-### Debian
-Make sure you have gnome-terminal installed
+
+### Build the Ibex docker container (via WSL)
+Within the ibex-demo-system repository, there is a set of instructions (_container/README.md_) to build the docker container locally. These steps are repeated here. 
+
+To build the container, navigate to the directory `ibex-demo-system/container` in the Linux terminal and run the following command: 
 ```bash
-sudo apt-get install ./docker-desktop-4.16.0-debian-amd64.deb
-systemctl --user enable docker-desktop
+sudo docker build . -t ibex -f container/Dockerfile
 ```
 
-### Fedora
-Make sure you have gnome-terminal installed
-```bash
-sudo dnf install ./docker-desktop-4.16.0-fedora-x86_64.rpm
-systemctl --user start docker-desktop
-```
+This command will install all of the necessary dependencies for the Ibex SoC and will take several minutes. This command may fail on different versions of Ubuntu, such as Ubuntu 22.04. You can check your OS version by running: `cat /etc/os-release`. 
 
-### Set up container (Linux/Mac)
-There is a prebuilt container of tools available you may want to use to get started quickly.
-There are instructions for building the container for either Docker/Podman located in ./container/README.md.
 
-A container image may be provided to you on a USB stick. You can load the container file by running :
-```bash
-sudo docker load < ibex_demo_image.tar
-# OR
-podman load < ibex_demo_image.tar
-```
 
-If you already have a container file, you can start the container by running :
-```bash
+## Running and interacting with the docker container using Docker Desktop and VS Code
+Once the container is built, you can use the following command in the root of the repository (`ibex-demo-system`) to start the container. This command should be run from the Ubuntu 20.04 terminal (standalone or inside VS Code). 
+
+```sh
 sudo docker run -it --rm \
   -p 6080:6080 \
   -p 3333:3333 \
   -v $(pwd):/home/dev/demo:Z \
   ibex
 ```
-OR
-```bash
-podman unshare chown 1000:1000 -R .
-podman run -it --rm \
-  -p 6080:6080 \
-  -p 3333:3333 \
-  -v $(pwd):/home/dev/demo:Z \
-  ibex
-podman unshare chown 0:0 -R .
-```
-To access the container once running, go to [http://localhost:6080/vnc.html](http://localhost:6080/vnc.html).
 
-### Set up container (Windows)
-Run a command prompt in administrator mode and type:
-```bash
-cd "C:\Program Files\Docker\Docker"
-.\DockerCli.exe -SwitchLinuxEngine
-```
+To access the container go to [http://localhost:6080/vnc.html](http://localhost:6080/vnc.html). This link provides a GUI interface for the container's OS. 
 
-Go to the folder on the USB named "Docker Images" and run:
-```bash
-docker load -i ibex_demo_image.tar
-```
 
-Go to the folder where you have decompressed the demo system repository:
-```bash
-docker run -it --rm -p 6080:6080 -p 3333:3333 -v %cd%:/home/dev/demo:Z ibex
-```
+### Accessing the container's shell from Docker Desktop
+After the container is running, in _Docker Desktop_ navigate to "Containers" and clock on the container that is currently running. From here, you can select "Files" to view the file system of the container. The command to start the container will mount the directory "ibex-demo-system" to `home/dev/demo`. Explore `home/dev/demo` to view the mirrored files. 
 
-## Building software
-To build the software use the following commands in your terminal:
+You can also select "Exec" to access a terminal (shell) and issue Linux commands inside the container. These commands will execute with all of dependent software installed as part of the container. 
+
+Running Linux commands from Docker Desktop may not be ideal for development. The following section details how to view the container terminal from VS Code. 
+
+
+### Accessing the container's shell from VS Code
+If developing inside of VS Code, it can be convenient to access the container terminal from inside of VS Code. To do so, you must have the Docker VS Code extension installed. In _VS Code_, navigate to "Docker" in the left-hand toolbar. Under "Individual Containers", right-click the running container "Ibex" and select "Attach Shell". This will open a shell for the container under VS Code's Terminal pane. Any commands you run here will be run inside of the docker container!
+
+
+### Make the container's shell prompt look nice
+The terminal for the docker shell defaults to the prompt `sh-5.0$`. You can run the following command to set a more user-friendly command prompt: 
+```sh
+  export PS1='\[\033[1;32m\]\u@\h\[\e[0m\]:\[\033[1;34m\]\w\[\e[0m\]\$ '
+```
+In this command, `\u` refers to the username of the current user, `h` refers to the hostname, and `\w` gets the current working directory. The remaining commands are used for formatting. 
+
+
+
+## Building software (C Stack)
+First the software must be built. This can be loaded into an FPGA to run on a synthesized Ibex processor, or passed to a verilator simulation model to be simulated on a PC. To build the software, use the following commands in your terminal from the root of the repository (`ibex-demo-system`).
+_If using a docker container, the following commands should be run from inside the container._
+
 ```bash
-cd /home/dev/demo
-mkdir -p sw/build
-pushd sw/build
+mkdir -p sw/c/build
+pushd sw/c/build
 cmake ..
 make
 popd
 ```
 
-This builds the software that we can later use as memory content for the Ibex running in the demo system. For example, the binary for the demo application is located at `sw/build/demo/hello_world/demo`.
+This builds the software that we can later use as memory content for the Ibex running in the demo system. For example, the binary for the demo application is located at `sw/c/build/demo/hello_world/demo`.
+
+
+
+## Analyzing the RISC-V Binary
+The demo application compiled in the previous step, `sw/c/build/demo/hello_world/demo`, is a RISC-V binary file. We can examine the contents of the binary file by disassembling it to read the RISC-V instructions via the following command.  
+_If using a docker container, the following commands should be run from inside the container._
+
+```bash
+riscv-32-unknown-elf-objdump -d demo > demo.dump
+```
+
+This command takes the file named `demo` in the current directory, disassembles it, and writes the output to a new file named `demo.dump`. 
+
+
+
+
+# Lab 1 Part A: Running hello_world on Ibex simulated with Verilator
+***TODO***
+
+
+
+
+# Lab 1 Part B: Running hello_world on Ibex atop the Arty-7 FPGA Board
+
+## Add udev rules for our device
+For both the container and the native setups you will need to add user device permissions for our FPGA board.
+The following instructions are for Linux-based systems and are needed for the programmer to access the development board.
+_If using a docker container, the following commands should be run from inside the container._
+
+Arty-A7
+```bash
+
+sudo su
+cat <<EOF > /etc/udev/rules.d/90-arty-a7.rules
+# Future Technology Devices International, Ltd FT2232C/D/H Dual UART/FIFO IC
+# used on Digilent boards
+ACTION=="add|change", SUBSYSTEM=="usb|tty", ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6010", ATTRS{manufacturer}=="Digilent", MODE="0666"
+
+# Future Technology Devices International, Ltd FT232 Serial (UART) IC
+ACTION=="add|change", SUBSYSTEM=="usb|tty", ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6001", MODE="0666"
+EOF
+
+exit
+```
+
+openFPGAloader
+```bash
+sudo su
+cat <<EOF > /etc/udev/rules.d/99-openfpgaloader.rules
+# Copy this file to /etc/udev/rules.d/
+
+ACTION!="add|change", GOTO="openfpgaloader_rules_end"
+
+# gpiochip subsystem
+SUBSYSTEM=="gpio", MODE="0664", GROUP="plugdev", TAG+="uaccess"
+
+SUBSYSTEM!="usb|tty|hidraw", GOTO="openfpgaloader_rules_end"
+
+# Original FT232/FT245 VID:PID
+ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6001", MODE="664", GROUP="plugdev", TAG+="uaccess"
+
+# Original FT2232 VID:PID
+ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6010", MODE="664", GROUP="plugdev", TAG+="uaccess"
+
+# Original FT4232 VID:PID
+ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6011", MODE="664", GROUP="plugdev", TAG+="uaccess"
+
+# Original FT232H VID:PID
+ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6014", MODE="664", GROUP="plugdev", TAG+="uaccess"
+
+# Original FT231X VID:PID
+ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6015", MODE="664", GROUP="plugdev", TAG+="uaccess"
+
+# anlogic cable
+ATTRS{idVendor}=="0547", ATTRS{idProduct}=="1002", MODE="664", GROUP="plugdev", TAG+="uaccess"
+
+# altera usb-blaster
+ATTRS{idVendor}=="09fb", ATTRS{idProduct}=="6001", MODE="664", GROUP="plugdev", TAG+="uaccess"
+ATTRS{idVendor}=="09fb", ATTRS{idProduct}=="6002", MODE="664", GROUP="plugdev", TAG+="uaccess"
+ATTRS{idVendor}=="09fb", ATTRS{idProduct}=="6003", MODE="664", GROUP="plugdev", TAG+="uaccess"
+
+# altera usb-blasterII - uninitialized
+ATTRS{idVendor}=="09fb", ATTRS{idProduct}=="6810", MODE="664", GROUP="plugdev", TAG+="uaccess"
+# altera usb-blasterII - initialized
+ATTRS{idVendor}=="09fb", ATTRS{idProduct}=="6010", MODE="664", GROUP="plugdev", TAG+="uaccess"
+
+# dirtyJTAG
+ATTRS{idVendor}=="1209", ATTRS{idProduct}=="c0ca", MODE="664", GROUP="plugdev", TAG+="uaccess"
+
+# Jlink
+ATTRS{idVendor}=="1366", ATTRS{idProduct}=="0105", MODE="664", GROUP="plugdev", TAG+="uaccess"
+
+# NXP LPC-Link2
+ATTRS{idVendor}=="1fc9", ATTRS{idProduct}=="0090", MODE="664", GROUP="plugdev", TAG+="uaccess"
+
+# NXP ARM mbed
+ATTRS{idVendor}=="0d28", ATTRS{idProduct}=="0204", MODE="664", GROUP="plugdev", TAG+="uaccess"
+
+# icebreaker bitsy
+ATTRS{idVendor}=="1d50", ATTRS{idProduct}=="6146", MODE="664", GROUP="plugdev", TAG+="uaccess"
+
+# orbtrace-mini dfu
+ATTRS{idVendor}=="1209", ATTRS{idProduct}=="3442", MODE="664", GROUP="plugdev", TAG+="uaccess"
+
+LABEL="openfpgaloader_rules_end"
+
+EOF
+
+exit
+
+```
+
+Run the following to reload the rules:
+
+```bash
+sudo udevadm control --reload-rules
+sudo udevadm trigger
+```
+
+Add user to plugdev group:
+```bash
+sudo usermod -a $USER -G plugdev
+```
+
 
 ## Getting the FPGA bitstream
 Get the FPGA bitstream off of the USB or download the [FPGA bitstream from GitHub](https://github.com/lowRISC/ibex-demo-system/releases/download/v0.0.2/lowrisc_ibex_demo_system_0.bit). Put the bitstream at the root of your demo system repository.
