@@ -172,7 +172,7 @@ Adjust the demo system application to print "Hello Ibex" instead of "Hello World
 
 
 </br></br>
-## Running hello_world on Ibex atop the Arty-7 FPGA Board (NOT TESTED)
+## Running hello_world on Ibex atop the Arty-7 FPGA Board 
 
 ### 1. Add udev rules for our device
 For both the container and the native setups you will need to add user device permissions for our FPGA board.
@@ -262,11 +262,20 @@ exit
 
 ```
 
-Run the following to reload the rules:
+Run the following to reload the rules for the container:
 
 ```bash
 sudo udevadm control --reload-rules
 sudo udevadm trigger
+```
+
+During these steps, if you encounter the error message:
+```console
+Failed to send reload request: No such file or directory
+```
+It may be because _udev_ is not running. You can start it manually via the following command: 
+```bash
+sudo /lib/systemd/systemd-udevd --daemon
 ```
 
 Add user to plugdev group:
@@ -274,24 +283,53 @@ Add user to plugdev group:
 sudo usermod -a $USER -G plugdev
 ```
 
+### 2. Forwarding the USB Device to WSL and Docker
+To program the FPGA from the docker container, we first have to forward the USB device from Windows to WSL. Then, we have to forward the device from WSL (Ubuntu) to the docker container. 
 
-### 2. Getting the FPGA bitstream
-Get the FPGA bitstream off of the USB or download the [FPGA bitstream from GitHub](https://github.com/lowRISC/ibex-demo-system/releases/download/v0.0.2/lowrisc_ibex_demo_system_0.bit). Put the bitstream at the root of your demo system repository.
+#### Forward a USB Device from Windows to WSL 
+We will first connect a USB device to a Linux distribution running on WSL 2 using the USB/IP open-source project, [usbipd-win](https://github.com/dorssel/usbipd-win).
+These instructions are copied from [https://learn.microsoft.com/en-us/windows/wsl/connect-usb](https://learn.microsoft.com/en-us/windows/wsl/connect-usb). 
 
-Alternatively, you can build your own bitstream if you have access to Vivado by following the instructions in [the README](https://github.com/lowRISC/ibex-demo-system/blob/main/README.md).
+Go to the latest release page for the [usbipd-win project](https://github.com/dorssel/usbipd-win/releases). 
+Select the .msi file, which will download the installer. (You may get a warning asking you to confirm that you trust this download).
+Run the downloaded `usbipd-win_x.msi` installer file.
 
-### 3. Programming the FPGA
-Before we can program the FPGA, we need to make it accessible from inside to the container.
-First, lets find out which bus and device our Arty is on:
+Now, we must identify and bind the FPGA USB port to WSL using `usbipd`. From Windows _PowerShell_ in administrator mode, enter the following command: 
+```bash
+usbipd list
+```
+
+Identify the BUS-ID corresponding to the Arty FPGA board. If it is unclear which device is the board, you can take an experimentalist approach to identify the board by running `usbipd list` while the board is disconnected, then connected, to note which entry appears. 
+
+Once you have the BUS-ID of the FPGA, run the following command to share the device and then bind it with WSL. In the following command, replace <BUS-ID> with the one you have identified. 
+```bash
+usbipd bind --busid <BUS-ID>
+usbipd attach --wsl --busid <BUS-ID>
+```
+
+Open the Ubuntu-20.04 terminal and check that you can see the FPGA board by running the following command:
+```bash
+lsusb
+...
+Bus 001 Device 002: ID 0403:6010 Future Technology Devices International, Ltd FT2232C/D/H Dual UART/FIFO IC
+...
+```
+If the board appears, we have successfully forwarded the USB device to the Ubuntu kernel. In the next step, we will forward it from the Ubuntu kernel to the docker container. 
+
+
+#### Forward a USB Device from WSL to Docker
+Next, we need to make the FPGA accessible from inside the container.
+To do this, we find out which bus and device our Arty is on. From the Ubuntu 20.04 terminal, run the following command:
 ```console
 $ lsusb
 ...
 Bus 00X Device 00Y: ID 0403:6010 Future Technology Devices International, Ltd FT2232C/D/H Dual UART/FIFO IC
 ...
 ```
-Where X and Y are numbers. Please note down what X and Y is for you (this will change if you unplug and replug your FPGA).
+The command `lsusb` will list multiple devices, including the Arty board, as shown above. In this example, `X` and `Y` are numbers that we will use in the following command. Note down the value of X and Y for your machine. ***These values will change if you unplug and replug your FPGA.***
 
-Then exit your docker and run it with the following parameters (assuming you're running Linux):
+
+Then, exit/stop the current docker instance and re-run it with the following parameters from the Ubuntu 20.04 terminal:
 ```bash
 sudo docker run -it --rm \
   -p 6080:6080 \
@@ -303,13 +341,24 @@ sudo docker run -it --rm \
   ibex
 ```
 
-Then inside the container at [localhost:6080/vnc.html](http://localhost:6080/vnc.html), we program the FPGA with the following terminal command:
+Now you will be able to access the FPGA board via USB from inside of the docker container.
+
+
+
+### 3. Getting the FPGA bitstream
+Download the [FPGA bitstream from GitHub (v0.0.3)](https://github.com/lowRISC/ibex-demo-system/releases/download/v0.0.3/lowrisc_ibex_demo_system_0.bit). Put the bitstream at the root of your demo system repository.
+
+Alternatively, you can build your own bitstream if you have access to Vivado by following the instructions in [the README](https://github.com/lowRISC/ibex-demo-system/blob/main/README.md). This is not needed for the current lab. 
+
+
+### 4. Programming the FPGA (FAILED HERE)
+Then, inside the docker container at [localhost:6080/vnc.html](http://localhost:6080/vnc.html), we program the FPGA with the following terminal command:
 ```bash
 openFPGALoader -b arty_a7_35t \
     /home/dev/demo/lowrisc_ibex_demo_system_0.bit
 ```
 
-### 4. Loading the software
+### 5. Loading the software
 Before we load the software, please check that you have OpenOCD installed:
 ```bash
 openocd --version
@@ -323,7 +372,7 @@ util/load_demo_system.sh run ./sw/build/demo/hello_world/demo
 
 Congratulations! You should now see the green LEDs zipping through and the RGB LEDs dimming up and down with different colors each time.
 
-### 5. Interacting with the UART
+### 6. Interacting with the UART
 Besides the LEDs, the demo application also prints to the UART serial output. You can see this output using the following command:
 ```bash
 screen /dev/ttyUSB1 115200
