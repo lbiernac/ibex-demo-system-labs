@@ -1,4 +1,4 @@
-# Lab 0: Installing development software 
+# Lab 0: Installing Development Software 
 
 In this lab, we will install prerequisites for setting up your development environment on Windows, including the following:
 - Visual Studio Code

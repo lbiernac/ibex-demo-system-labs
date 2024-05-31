@@ -1,6 +1,7 @@
 # Open RISC-V Silicon Development with Ibex
 
 List of labs for the Ibex Demo System:
+- [Lab 0: Installing Development Software (Docker, WSL, VS Code)](./lab0.md)
 - [Lab 1: Programming your FPGA and interacting with the demo system](./lab1.md)
 - [Lab 2: Simulating with Verilator+GTKWave and modifying a HW peripheral](./lab2.md)
 - [Lab 3: Using the LCD Display over SPI](./lab3.md)
@@ -8,7 +9,9 @@ List of labs for the Ibex Demo System:
 
 This content is copyright lowRISC and licensed under the Creative Commons Attribution 4.0 International Public License, see LICENSE for details.
 
-# Lab Preamble
+</br>
+
+## Preamble
 
 In this tutorial, lowRISC shows how to work with a minimal SoC built around Ibex (the Ibex Demo System, https://github.com/lowRISC/ibex-demo-system). Ibex is a mature RISC-V (RV32IMCB) core which has seen several tape outs across academia and industry. lowRISC helps maintain Ibex as part of the OpenTitan project. The SoC is fully open source and designed to serve as a starting point for embedded computer architecture research, development, and teaching. The SoC combines Ibex with a number of useful peripherals (such as UART, Timer, PWM and SPI) and a full-featured debug interface.
 
