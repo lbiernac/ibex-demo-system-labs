@@ -108,11 +108,66 @@ This command takes the file named `demo` in the current directory, disassembles 
 
 </br></br>
 ## Running hello_world on Ibex simulated with Verilator
-***TODO***
+
+[Verilator](https://verilator.org) is a widely used simulator for Verilog and SystemVerilog.
+It compiles RTL code to a multithreaded C++ executable, which makes Verilator much faster than other simulators in many cases.
+Verilator is free software (licensed LGPLv3). Verilator comes installed in the Ibex docker container. You do not need to install it separately.
+
+
+### 1. Building the Simulation
+
+The ibex-demo-system simulator binary can be built via FuseSoC. From the container, run the following command inside of the ibex-demo-system repository (`home/dev/demo`).
+
+_If using a docker container, the following commands should be run from inside the container._
+
+```
+fusesoc --cores-root=. run --target=sim --tool=verilator --setup --build lowrisc:ibex:demo_system
+```
+
+This will create a Verilator executable for the current Ibex build. The executable is located at `/build/lowrisc_ibex_demo_system_0/sim-verilator/Vtop_verilator`, relative to the ibex-demo-system root directory.
+
+
+
+### 2. Running the Simulator
+
+In previous steps, we have created a simulated implementation of Ibex and a compiled RISC-V binary. We can now run the simulator by invoking the Verilator executable.
+
+  
+#### Running a Simulation with the `demo` Binary
+
+The following command starts the simulation using the `demo` binary, which was compiled from `hello_world.c`. This binary is located at the path `/sw/c/build/demo/hello_world/demo`, relative to the ibex-demo-system root directory. The command to invoke the simulator takes the entire path and is run from the root directory inside of the container. 
+```
+./build/lowrisc_ibex_demo_system_0/sim-verilator/Vtop_verilator --meminit=ram,./sw/c/build/demo/hello_world/demo
+```
+
+
+#### Running a Simulation with any Binary
+
+The following general command can be used for any desired binary when completing the field `<sw_elf_file>`. 
+```
+./build/lowrisc_ibex_demo_system_0/sim-verilator/Vtop_verilator [-t] --meminit=ram,<sw_elf_file>
+```
+
+This command uses two flags: 
+- `-t` (optional): Enables the capturing of an FST trace of execution that can be viewed with [GTKWave](http://gtkwave.sourceforge.net/). GTKWave is used in Lab 2. 
+- `--meminit`: Loads the binary at the path `<sw_elf_file>` into program memory
+
+
+#### Observing the Simulation
+
+As no outputs (such as UART or GPIO) are mapped to the Verilator console, the console output does not indicate much activity.
+However, the simulation is actively running and wave traces are continuously being written to a file called `sim.fst`.
+Additionally, the UART output is continuously written to a file in the root directory called `uart0.log`. You can watch this file using the following terminal command (run either in the container or in Ubuntu):
+```bash
+tail -f uart0.log
+```
+
+The simulation will run until you press `Ctrl+C`.
+
 
 
 ### Exercise 1
-Adjust the demo system application to print "Hello Ibex" instead of "Hello World". You should adjust the content of the file in `sw/c/demo/hello_world/main.c`. Afterwards, you should rebuild the software, but do not need to rebuild the bitstream. Once you've built your updated software, you can load the software onto the board to see the result.
+Adjust the demo system application to print "Hello Ibex" instead of "Hello World". You should adjust the content of the file in `sw/c/demo/hello_world/main.c`. Afterward, ***you should rebuild the software*** using the above instructions. You do not need to rebuild the simulator, since the Ibex source code is unchanged. Once you've built your updated software workload, you can restart the simulator to see the result. 
 
 
 
