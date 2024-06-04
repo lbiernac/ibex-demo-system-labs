@@ -99,7 +99,7 @@ The demo application compiled in the previous step, `sw/c/build/demo/hello_world
 _If using a docker container, the following commands should be run from inside the container._
 
 ```bash
-riscv-32-unknown-elf-objdump -d demo > demo.dump
+riscv32-unknown-elf-objdump -d demo > demo.dump
 ```
 
 This command takes the file named `demo` in the current directory, disassembles it, and writes the output to a new file named `demo.dump`. 
