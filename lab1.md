@@ -27,9 +27,9 @@ git checkout c25aeeba59a695ee7846c8c39a2ddc11230c2656
 
 
 ### 2. Build the Ibex docker container (via WSL)
-Within the ibex-demo-system repository, there is a set of instructions (_container/README.md_) to build the docker container locally. These steps are repeated here. 
+Within the ibex-demo-system repository, there is a set of instructions (_container/README.md_) on how to build the docker container locally. These steps are repeated here. 
 
-To build the container, navigate to the directory `ibex-demo-system/container` in the Linux terminal and run the following command: 
+To build the container, navigate to the directory `ibex-demo-system` in the Linux terminal and run the following command: 
 ```bash
 sudo docker build . -t ibex -f container/Dockerfile
 ```
