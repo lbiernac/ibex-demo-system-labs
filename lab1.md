@@ -41,7 +41,7 @@ This command will install all of the necessary dependencies for the Ibex SoC and
 Once the container is built, you can use the following command in the root of the repository (`ibex-demo-system`) to start the container. This command should be run from the Ubuntu 20.04 terminal (standalone or inside VS Code). 
 
 ```sh
-sudo docker run -it --rm \
+sudo docker run -it \
   -p 6080:6080 \
   -p 3333:3333 \
   -v $(pwd):/home/dev/demo:Z \
@@ -232,7 +232,7 @@ sudo docker run -it --rm \
 Now you will be able to access the FPGA board via USB from inside of the docker container.
 
 ### 2. Add udev rules for our device
-The Docker container is configured to automatically load the user device permissions for the FPGA board, located at `/etc/udev/90-arty-a7.rules`. 
+The Docker container is configured to automatically load the user device permissions for the FPGA board, located at `/etc/udev/rules.d/90-arty-a7.rules`. 
 
 Run the following to reload the rules for the container: 
 _If using a docker container, the following commands should be run from inside the container._
@@ -253,8 +253,13 @@ sudo /lib/systemd/systemd-udevd --daemon
 
 Add user to plugdev group:
 ```bash
-sudo usermod -a $USER -G plugdev
+sudo usermod -a -G plugdev dev
 ```
+You can ensure that the current user `dev` has been added to the plugdev group using the command:
+```bash
+groups dev
+```
+
 
 ### 3. Getting the FPGA bitstream
 Download the [FPGA bitstream from GitHub (v0.0.3)](https://github.com/lowRISC/ibex-demo-system/releases/download/v0.0.3/lowrisc_ibex_demo_system_0.bit). Put the bitstream at the root of your demo system repository.
@@ -265,7 +270,11 @@ Alternatively, you can build your own bitstream if you have access to Vivado by 
 ### 4. Programming the FPGA (FAILED HERE, possibly because of USB Hub use)
 Then, inside the docker container at [localhost:6080/vnc.html](http://localhost:6080/vnc.html), we program the FPGA with the following terminal command:
 ```bash
-openFPGALoader -b arty_a7_100t /home/dev/demo/lowrisc_ibex_demo_system_0.bit
+openFPGALoader -b arty_a7_100t /home/dev/demo/ibex-demo-system/lowrisc_ibex_demo_system_0.bit
+```
+If you recieve an error stating that "unable to open ftdi device", you may need to run the command with sudo:
+```bash
+sudo openFPGALoader -b arty_a7_100t /home/dev/demo/ibex-demo-system/lowrisc_ibex_demo_system_0.bit
 ```
 
 ### 5. Loading the software
@@ -277,7 +286,7 @@ Please also check that you have version 0.11.0.
 
 Then you can load and run the program as follows:
 ```bash
-util/load_demo_system.sh run ./sw/build/demo/hello_world/demo
+util/load_demo_system.sh run ./sw/c/build/demo/hello_world/demo
 ```
 
 Congratulations! You should now see the green LEDs zipping through and the RGB LEDs dimming up and down with different colors each time.
