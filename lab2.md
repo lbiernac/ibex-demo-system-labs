@@ -19,20 +19,32 @@ fusesoc --cores-root=. run --target=sim --tool=verilator \
 
 This will create an executable at
 ```
-./build/lowrisc_ibex_demo_system_0/sim-verilator/Vibex_demo_system
+/build/lowrisc_ibex_demo_system_0/sim-verilator/Vtop_verilator
 ```
 
 Now start the simulation by invoking that executable with two flags: the first flag enables the capturing of wave traces, and the second flag loads the `demo` binary into program memory
 ```
-./build/lowrisc_ibex_demo_system_0/sim-verilator/Vibex_demo_system \
-    -t --meminit=ram,$(pwd)/sw/build/demo/hello_world/demo
+./build/lowrisc_ibex_demo_system_0/sim-verilator/Vtop_verilator [-t] --meminit=ram,./sw/c/build/demo/hello_world/demo
+```
+
+This command uses two flags: 
+- `-t` (optional): Enables the capturing of an FST trace of execution that can be viewed with [GTKWave](http://gtkwave.sourceforge.net/). GTKWave is used in Lab 2. 
+- `--meminit`: Loads the binary at the path `<sw_elf_file>` into program memory
+
+
+#### Observing the Simulation
+
+As no outputs (such as UART or GPIO) are mapped to the Verilator console, the console output does not indicate much activity.
+However, the simulation is actively running and wave traces are continuously being written to a file called `sim.fst`.
+Additionally, the UART output is continuously written to a file in the root directory called `uart0.log`. You can watch this file using the following terminal command (run either in the container or in Ubuntu):
+```bash
+tail -f uart0.log
 ```
 
 The simulation will run until you press `Ctrl+C`.
-As no outputs (such as UART or GPIO) are mapped to the Verilator console, the console output does not indicate much activity.
-However, the simulation is actively running and wave traces are continuously being written to a file called `sim.fst`.
-Let's inspect them.
 
+
+</br></br>
 
 ## Inspecting waves with GTKWave
 

@@ -2,10 +2,11 @@
 
 List of labs for the Ibex Demo System:
 - [Lab 0: Installing Development Software (Docker, WSL, VS Code)](./lab0.md)
-- [Lab 1: Programming your FPGA and interacting with the demo system](./lab1.md)
+- [Lab 1: Getting Started with Ibex and Simulating with Verilator](./lab1.md)
 - [Lab 2: Simulating with Verilator+GTKWave and modifying a HW peripheral](./lab2.md)
-- [Lab 3: Using the LCD Display over SPI](./lab3.md)
-- [Lab 4: Adding custom instructions to Ibex](./lab4.md)
+- [Lab 3: Programming the Arty-7 FPGA Board ](./lab3.md)
+- [Lab 4: Using the LCD Display over SPI](./lab4.md)
+- [Lab 5: Adding custom instructions to Ibex](./lab5.md)
 
 This content is copyright lowRISC and licensed under the Creative Commons Attribution 4.0 International Public License, see LICENSE for details.
 

@@ -1,26 +1,31 @@
-# Lab 1: Programming your FPGA and interacting with the demo system
+# Lab 1: Getting Started with Ibex and Simulating with Verilator
 
-Welcome to the first lab on using the [Ibex demo system](https://github.com/lbiernac/ibex-demo-system). In this lab, we will:
+Welcome to the first lab on using the [Ibex demo system (public)](https://github.com/lbiernac/ibex-demo-system). In this lab, we will:
 
 - Set up your development environment.
 - Learn how to build the software.
-- Program our board with a bitstream.
-- Run the software on the board.
-- Read from the UART.
-- Interact with the Ibex using GDB.
+- Simulate the system with Verilator.
+- Run a hello_world software on Ibex with Verilator.
 
 </br>
 
 ## Getting Started with the Ibex Demo System
 
 ### 1. Download the Ibex Demo System Repository
-From the Ubuntu-20.04 terminal (either standalone or in VS Code), clone ibex-demo-system repository using the following terminal commands:
+From the Ubuntu-20.04 terminal (either standalone or in VS Code), clone the `ibex-demo-system` repository using the following terminal commands:
 ```bash
 git clone https://github.com/lbiernac/ibex-demo-system.git
 cd ibex-demo-system
 ```
 
 This tutorial is based on commit `c25aeeb` of [lowRISC's ibex-demo-system repository](https://github.com/lowRISC/ibex-demo-system) and tested on Windows 11 using WSL with Ubuntu 20.04. The [fork of ibex-demo-system](https://github.com/lbiernac/ibex-demo-system.git) used for this tutorial includes changes to the Docker file to work correctly with this tutorial. 
+
+If using the _private_ fork of `ibex-demo-system` for research development purposes, instead clone [this repository](https://github.com/lbiernac/ibex-development) using the command:
+```bash
+git clone --recursive git@github.com:lbiernac/ibex-development.git
+cd ibex-development
+```
+
 
 
 ### 2. Build the Ibex docker container (via WSL)
@@ -35,6 +40,7 @@ This command will install all of the necessary dependencies for the Ibex SoC and
 
 
 </br></br>
+
 ## Running the Container using Docker Desktop and VS Code
 
 ### 1. Starting the Container
@@ -72,7 +78,9 @@ In this command, `\u` refers to the current user's username, `\h` refers to the 
 
 
 </br></br>
+
 ## Building Software for Ibex (C Stack)
+
 First, the software must be built. This can be loaded into an FPGA to run on a synthesized Ibex processor or passed to a verilator simulation model to be simulated on a PC. 
 
 ### 1. Compile the C Workloads
@@ -104,9 +112,11 @@ This command takes the file named `demo` in the current directory, disassembles 
 
 
 </br></br>
+
 ## Running hello_world on Ibex simulated with Verilator
 
-[Verilator](https://verilator.org) is a widely used simulator for Verilog and SystemVerilog.
+
+[Verilator](https://verilator.org) is a widely used open-source simulator for Verilog and SystemVerilog.
 It compiles RTL code to a multithreaded C++ executable, which makes Verilator much faster than other simulators in many cases.
 Verilator is free software (licensed LGPLv3). Verilator comes installed in the Ibex docker container. You do not need to install it separately.
 
@@ -165,174 +175,3 @@ The simulation will run until you press `Ctrl+C`.
 
 ### Exercise 1
 Adjust the demo system application to print "Hello Ibex" instead of "Hello World". You should adjust the content of the file in `sw/c/demo/hello_world/main.c`. Afterward, ***you should rebuild the software*** using the above instructions. You do not need to rebuild the simulator, since the Ibex source code is unchanged. Once you've built your updated software workload, you can restart the simulator to see the result. 
-
-
-
-</br></br>
-## Running hello_world on Ibex atop the Arty-7 FPGA Board 
-
-### 1. Forwarding the USB Device to WSL and Docker
-Plug in the FPGA to a USB port on your machine. To program the FPGA from the docker container, we first have to forward the USB device from Windows to WSL. Then, we have to forward the device from WSL (Ubuntu) to the docker container. 
-
-#### Forward a USB Device from Windows to WSL 
-We will first connect a USB device to a Linux distribution running on WSL 2 using the USB/IP open-source project, [usbipd-win](https://github.com/dorssel/usbipd-win).
-These instructions are copied from [https://learn.microsoft.com/en-us/windows/wsl/connect-usb](https://learn.microsoft.com/en-us/windows/wsl/connect-usb). 
-
-Go to the latest release page for the [usbipd-win project](https://github.com/dorssel/usbipd-win/releases). 
-Select the .msi file, which will download the installer. (You may get a warning asking you to confirm that you trust this download).
-Run the downloaded `usbipd-win_x.msi` installer file.
-
-Now, we must identify and bind the FPGA USB port to WSL using `usbipd`. From Windows _PowerShell_ in administrator mode, enter the following command: 
-```bash
-usbipd list
-```
-
-Identify the BUS-ID corresponding to the Arty FPGA board. If it is unclear which device is the board, you can take an experimentalist approach to identify the board by running `usbipd list` while the board is disconnected, then connected, to note which entry appears. 
-
-Once you have the BUS-ID of the FPGA, run the following command to share the device and then bind it with WSL. In the following command, replace <BUS-ID> with the one you have identified. 
-```bash
-usbipd bind --busid <BUS-ID>
-usbipd attach --wsl --busid <BUS-ID>
-```
-
-Open the Ubuntu-20.04 terminal and check that you can see the FPGA board by running the following command:
-```bash
-lsusb
-...
-Bus 001 Device 002: ID 0403:6010 Future Technology Devices International, Ltd FT2232C/D/H Dual UART/FIFO IC
-...
-```
-If the board appears, we have successfully forwarded the USB device to the Ubuntu kernel. In the next step, we will forward it from the Ubuntu kernel to the docker container. 
-
-
-#### Forward a USB Device from WSL to Docker
-Next, we need to make the FPGA accessible from inside the container.
-To do this, we find out which bus and device our Arty is on. From the Ubuntu 20.04 terminal, run the following command:
-```console
-$ lsusb
-...
-Bus 00X Device 00Y: ID 0403:6010 Future Technology Devices International, Ltd FT2232C/D/H Dual UART/FIFO IC
-...
-```
-The command `lsusb` will list multiple devices, including the Arty board, as shown above. In this example, `X` and `Y` are numbers that we will use in the following command. Note down the value of X and Y for your machine. ***These values will change if you unplug and replug your FPGA.***
-
-
-Then, exit/stop the current docker instance and re-run it with the following parameters from the Ubuntu 20.04 terminal:
-```bash
-sudo docker run -it --rm \
-  -p 6080:6080 \
-  -p 3333:3333 \
-  -v $(pwd):/home/dev/demo:Z \
-  --privileged \
-  --device=/dev/bus/usb/00X/00Y \
-  --device=/dev/ttyUSB1 \
-  ibex
-```
-
-Now you will be able to access the FPGA board via USB from inside of the docker container.
-
-### 2. Add udev rules for our device
-The Docker container is configured to automatically load the user device permissions for the FPGA board, located at `/etc/udev/rules.d/90-arty-a7.rules`. 
-
-Run the following to reload the rules for the container: 
-_If using a docker container, the following commands should be run from inside the container._
-
-```bash
-sudo udevadm control --reload-rules
-sudo udevadm trigger
-```
-
-During these steps, if you encounter the error message:
-```console
-Failed to send reload request: No such file or directory
-```
-It may be because _udev_ is not running. You can start it manually via the following command: 
-```bash
-sudo /lib/systemd/systemd-udevd --daemon
-```
-
-Add user to plugdev group:
-```bash
-sudo usermod -a -G plugdev dev
-```
-You can ensure that the current user `dev` has been added to the plugdev group using the command:
-```bash
-groups dev
-```
-
-
-### 3. Getting the FPGA bitstream
-Download the [FPGA bitstream from GitHub (v0.0.3)](https://github.com/lowRISC/ibex-demo-system/releases/download/v0.0.3/lowrisc_ibex_demo_system_0.bit). Put the bitstream at the root of your demo system repository.
-
-Alternatively, you can build your own bitstream if you have access to Vivado by following the instructions in [the README](https://github.com/lowRISC/ibex-demo-system/blob/main/README.md). This is not needed for the current lab. 
-
-
-### 4. Programming the FPGA (FAILED HERE, possibly because of USB Hub use)
-Then, inside the docker container at [localhost:6080/vnc.html](http://localhost:6080/vnc.html), we program the FPGA with the following terminal command:
-```bash
-openFPGALoader -b arty_a7_100t /home/dev/demo/ibex-demo-system/lowrisc_ibex_demo_system_0.bit
-```
-If you recieve an error stating that "unable to open ftdi device", you may need to run the command with sudo:
-```bash
-sudo openFPGALoader -b arty_a7_100t /home/dev/demo/ibex-demo-system/lowrisc_ibex_demo_system_0.bit
-```
-
-### 5. Loading the software
-Before we load the software, please check that you have OpenOCD installed:
-```bash
-openocd --version
-```
-Please also check that you have version 0.11.0.
-
-Then you can load and run the program as follows:
-```bash
-util/load_demo_system.sh run ./sw/c/build/demo/hello_world/demo
-```
-
-Congratulations! You should now see the green LEDs zipping through and the RGB LEDs dimming up and down with different colors each time.
-
-### 6. Interacting with the UART
-Besides the LEDs, the demo application also prints to the UART serial output. You can see this output using the following command:
-```bash
-screen /dev/ttyUSB1 115200
-```
-If you see an immediate `[screen is terminating]`, it may mean that you need super user rights. In this case, you may try adding `sudo` before the `screen` command. To exit from the `screen` command, you should press control and a together, then release these two keys and press d.
-
-### Exercise 1
-While the demo application is running try toggling the switches and buttons, you should see changes in the input value that is displayed by `screen`.
-
-### Exercise 2
-Adjust the demo system application to print "Hello Ibex" instead of "Hello World". You should adjust the content of the file in `sw/c/demo/hello_world/main.c`. Afterwards, you should rebuild the software, but do not need to rebuild the bitstream. Once you've built your updated software, you can load the software onto the board to see the result.
-
-### Exercise 3
-Write to the green LEDs using GDB. Look in `sw/common/demo_system_regs.h` for the value of `GPIO_BASE`. Use the set command above to write `0xa0` to this base address. This should change the green LEDs to be on, off, on and off.
-
-
-
-
-</br> </br>
-## Debugging using GDB
-We can use OpenOCD to connect to the JTAG on the FPGA. We can then use GDB to connect to OpenOCD and interact with the board as we would when we debug any other application.
-
-First, let's load the software in the halted state:
-```bash
-util/load_demo_system.sh halt ./sw/build/demo/hello_world/demo
-```
-
-In a separate terminal window, you can connect GDB to the OpenOCD server:
-```bash
-riscv32-unknown-elf-gdb -ex "target extended-remote localhost:3333" \
-    ./sw/c/build/demo/hello_world/demo
-```
-
-Some useful GDB commands:
-
-- `step`: steps to the next instruction.
-- `advance main`: keep running until the start of the main function (you can replace main with another function).
-- `set {int}0xhex_addr = 0xhex_val`: write `hex_val` to the memory address `hex_addr`.
-- `x/w 0xhex_addr`: read a word (32 bits) from `hex_addr` and display it in hexidecimal.
-- `info locals`: shows you the values of the local variables for the current function.
-- `backtrace`: shows you the call stack.
-- `help`: to find commands you may not yet know.
-
-</br>
