@@ -96,6 +96,8 @@ The final dependency for proceeding with the Ibex labs is to install git. From t
 sudo apt-get install git
 ```
 
+You should also take a minute to generate and configure a new SSH key in WSL for your GitHub account. You can find information on how to do so [here](https://docs.github.com/en/authentication/connecting-to-github-with-ssh).  
+
 __Now we are ready to set up the Ibex environment and build the docker container!__
 
 </br>
